@@ -1,0 +1,57 @@
+
+name: FotMob API Capture - Chromium
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: "FotMob page URL"
+        required: true
+        default: "https://www.fotmob.com/"
+        type: string
+      wait_seconds:
+        description: "Wait time after page load"
+        required: true
+        default: "20"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    name: Chromium Network Analyzer
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Install Playwright
+        run: |
+          npm install playwright
+          npx playwright install --with-deps chromium
+
+      - name: Create Output Directory
+        run: mkdir -p captures
+
+      - name: Run Chromium Network Capture
+        env:
+          TARGET_URL: ${{ inputs.target_url }}
+          WAIT_SECONDS: ${{ inputs.wait_seconds }}
+        run: node capture.mjs
+
+      - name: Upload API Capture
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: FotMob-API-Network-Capture
+          path: captures/
+          retention-days: 7
+          if-no-files-found: warn
